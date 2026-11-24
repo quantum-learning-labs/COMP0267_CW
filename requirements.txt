@@ -1,0 +1,21 @@
+# direct dependencies (versions of the environment the results were produced with)
+torch==2.9.0
+torchvision==0.24.0
+numpy==2.4.6
+pandas==2.3.3
+pillow==12.1.0
+pyyaml==6.0.3
+tqdm==4.67.3
+einops==0.8.2
+opt-einsum==3.4.0
+scikit-learn==1.8.0
+pydantic-settings==2.10.1
+mlflow==3.8.1
+datasets==3.6.0
+lambeq==0.5.0
+qiskit==2.4.2
+qiskit-aer==0.17.2          # qiskit-aer-gpu on CUDA machines
+qiskit-ibm-runtime==0.47.0
+qiskit-ionq==1.1.1            # IonQ cloud simulator (emulate.provider: ionq)
+iqm-client[qiskit]==35.0.1   # IQM device snapshots (emulate.provider: iqm)
+clip @ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6
