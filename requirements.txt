@@ -1,21 +1,22 @@
-# direct dependencies (versions of the environment the results were produced with)
-torch==2.9.0
-torchvision==0.24.0
+# Python 3.12. Versions the notebook was tested with.
 numpy==2.4.6
 pandas==2.3.3
 pillow==12.1.0
-pyyaml==6.0.3
 tqdm==4.67.3
-einops==0.8.2
+matplotlib==3.10.7
 opt-einsum==3.4.0
-scikit-learn==1.8.0
-pydantic-settings==2.10.1
-mlflow==3.8.1
-datasets==3.6.0
+torch==2.9.0
+torchvision==0.24.0
+
+# parsing sentences into CCG diagrams
 lambeq==0.5.0
+transformers==4.40.2  # newer releases break lambeq 0.5's Bobcat parser
+
+# circuits, emulators (IBM fake backends) and IBM hardware.
+# IQM hardware needs iqm-client[qiskit], which pins qiskit<2.2: install it in a separate environment.
 qiskit==2.4.2
-qiskit-aer==0.17.2          # qiskit-aer-gpu on CUDA machines
+qiskit-aer==0.17.2
 qiskit-ibm-runtime==0.47.0
-qiskit-ionq==1.1.1            # IonQ cloud simulator (emulate.provider: ionq)
-iqm-client[qiskit]==35.0.1   # IQM device snapshots (emulate.provider: iqm)
+
+# only needed to rebuild the image embeddings from the raw images
 clip @ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6
