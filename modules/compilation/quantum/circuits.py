@@ -35,6 +35,7 @@ def tn2qiskit(einsum_expr, gate_arr, param_dict={}, out_q=None, meas_output=True
     qcounter = 0
     name2param = {}
     qiskit_param_dict = {}
+    postselection_clbits = []
 
     for idx_arr, gate in zip(input_indices, gate_arr):
         if gate['op_type'] == '0':
@@ -42,9 +43,9 @@ def tn2qiskit(einsum_expr, gate_arr, param_dict={}, out_q=None, meas_output=True
             wire2q[wire_name].append(qcounter)
             qcounter += 1
         elif gate['op_type'] == '0_dag':
-            # post_selection
             q_target = wire2q[idx_arr[0]].pop()
             qc.measure(q_target, q_target)
+            postselection_clbits.append(q_target)
         else: 
             num_in = len(idx_arr) // 2 
             in_wires = idx_arr[:num_in]
@@ -79,6 +80,7 @@ def tn2qiskit(einsum_expr, gate_arr, param_dict={}, out_q=None, meas_output=True
             qc.h(q_left)
             qc.measure(q_left, q_left)
             qc.measure(q_right, q_right)
+            postselection_clbits.extend((q_left, q_right))
 
     output_qubits = []
     sentence_wires = output_indices[:out_q] if out_q is not None else output_indices
@@ -91,7 +93,34 @@ def tn2qiskit(einsum_expr, gate_arr, param_dict={}, out_q=None, meas_output=True
                 qc.measure(q_out, q_out)
             output_qubits.append(q_out)
     
+    qc.metadata = {
+        **(qc.metadata or {}),
+        "postselection_clbits": postselection_clbits,
+        "output_qubits": output_qubits,
+    }
     return qc, output_qubits, qiskit_param_dict
+
+
+def postselect_output_counts(counts, circuit):
+    metadata = circuit.metadata or {}
+    postselection_clbits = metadata.get("postselection_clbits", [])
+    output_qubits = metadata.get("output_qubits")
+    if output_qubits is None:
+        raise ValueError("Circuit metadata does not include output qubits")
+    output_clbits = [circuit.num_clbits + qubit for qubit in output_qubits]
+    required_clbits = postselection_clbits + output_clbits
+
+    filtered_counts = {}
+    for outcome, count in counts.items():
+        bits = outcome.replace(" ", "")
+        if any(clbit < 0 or clbit >= len(bits) for clbit in required_clbits):
+            raise ValueError("Post-selection or output bit index exceeds the measured count width")
+        if all(bits[-1 - clbit] == "0" for clbit in postselection_clbits):
+            output = "".join(bits[-1 - clbit] for clbit in output_clbits)
+            filtered_counts[output] = filtered_counts.get(output, 0) + count
+
+    return filtered_counts
+
 
 def _to_float_params(params):
     return {k: float(v.item()) if hasattr(v, 'item') else float(v) for k, v in params.items()}

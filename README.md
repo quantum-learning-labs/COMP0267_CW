@@ -1,2 +1,3 @@
+# COMP0267: 2026-2027 
 # COMP0267_CW
-Coursework for COMP0267 module at UCL.
+# COMP0267_CW
