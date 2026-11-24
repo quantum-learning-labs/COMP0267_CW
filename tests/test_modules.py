@@ -48,10 +48,11 @@ def test_tn_model_output_shape():
     assert TNModel([recipe])([recipe, recipe]).shape == (2, 5)
 
 
-@pytest.mark.parametrize("qubits", [{"n": 1, "s": 1, "out": 1}, {"n": 1, "s": 2, "out": 2}])
-def test_vqc_matches_postselected_statevector(qubits):
+@pytest.mark.parametrize("qubits, root", [({"n": 1, "s": 1, "out": 1}, True), ({"n": 1, "s": 2, "out": 2}, True),
+                                          ({"n": 1, "s": 2}, False)])
+def test_vqc_matches_postselected_statevector(qubits, root):
     torch.manual_seed(0)
-    recipe = RyCX(qubits, layers=2)(DIAGRAM)
+    recipe = RyCX(qubits, layers=2, root=root)(DIAGRAM)
     model = VQCModel([recipe])
     state = model([recipe])[0].detach().numpy()
 
@@ -77,7 +78,7 @@ def test_angle_encoder_matches_qiskit():
 
 def test_exact_overlap_matches_torch_fidelity():
     torch.manual_seed(1)
-    recipe = RyCX({"n": 1, "s": 1, "out": 2}, layers=1)(DIAGRAM)
+    recipe = RyCX({"n": 1, "s": 2}, layers=1)(DIAGRAM)
     model, encoder = VQCModel([recipe]), AngleEncoder(n_qubits=2, layers=1)
     x = torch.randn(1, encoder.n_features)
     expected = fidelity(model([recipe]), encoder(x)).item()
@@ -88,6 +89,11 @@ def test_exact_overlap_matches_torch_fidelity():
     assert math.isclose(overlap, expected, abs_tol=1e-5)
     norm2 = model([recipe]).abs().square().sum().item()
     assert math.isclose(p_accept, norm2 / 2 ** (len(qc.metadata["postselect"]) // 2), rel_tol=1e-4)
+
+
+def test_ansatz_rejects_dangling_wires():
+    with pytest.raises(ValueError):
+        RyCX({"n": 1, "s": 1})(DIAGRAM[:2])  # "alice loves": the object wire is left open
 
 
 def test_estimate_overlap_reads_little_endian_counts():

@@ -107,11 +107,16 @@ class CircuitBuilder:
 
 
 class Ansatz(ABC):
-    """Diagram -> Recipe: each box becomes a circuit on ``qubits[type]`` qubits per wire; shared wires become cups."""
+    """Diagram -> Recipe: each box becomes a circuit on ``qubits[type]`` qubits per wire; shared wires become cups.
 
-    def __init__(self, qubits: Mapping[str, int], layers: int = 1) -> None:
+    With ``root=False`` (default) the output is the head's open sentence wire; with ``root=True`` a shared ``ROOT``
+    circuit maps it to ``qubits['out']`` output qubits, as in the classical model.
+    """
+
+    def __init__(self, qubits: Mapping[str, int], layers: int = 1, root: bool = False) -> None:
         self.qubits = dict(qubits)
         self.layers = layers
+        self.root = root
 
     @abstractmethod
     def word_circuit(self, circuit: CircuitBuilder, wires: list[str], name: str) -> None:
@@ -121,16 +126,18 @@ class Ansatz(ABC):
         circuit = CircuitBuilder()
         first_end: dict[int, list[str]] = {}  # diagram wire -> qubits of the first box that has it
         cups: dict[str, str] = {}
-        for word, ccg_wires, types in add_root(diagram):
+        for word, ccg_wires, types in add_root(diagram) if self.root else diagram:
             wires = [circuit.qubit() for t in types for _ in range(self.qubits[t])]
             self.word_circuit(circuit, wires, symbol(word, types))
             start = 0
             for ccg_wire, t in zip(ccg_wires, types):
                 part, start = wires[start:start + self.qubits[t]], start + self.qubits[t]
                 if ccg_wire in first_end:
-                    cups.update(zip(part, first_end[ccg_wire]))
+                    cups.update(zip(part, first_end.pop(ccg_wire)))
                 else:
                     first_end[ccg_wire] = part
+        if list(first_end) != [0]:
+            raise ValueError(f"diagram wires {sorted(first_end)} are open; only the output wire 0 may be")
         return circuit.recipe(outputs=first_end[0], rename=cups)
 
 
