@@ -3,16 +3,15 @@
 Set ``COMP0267_ASSETS`` to use a mirror (any URL urllib can read, including ``file://``) and ``COMP0267_CACHE`` to move
 the cache.
 """
-import os
-import shutil
-import tarfile
-import tempfile
+import os, shutil, tarfile, tempfile
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.request import urlopen
 
 from tqdm.auto import tqdm
 
-ASSET_URL = os.environ.get("COMP0267_ASSETS", "https://huggingface.co/datasets/quantum-learning-labs/comp0267/resolve/main")
+ASSET_URL = os.environ.get("COMP0267_ASSETS",
+                           "https://github.com/quantum-learning-labs/COMP0267_CW/releases/download/assets-v1")
 CACHE = Path(os.environ.get("COMP0267_CACHE", Path.home() / ".cache" / "comp0267"))
 ARCHIVES = {"svo-probes": "svo-probes-processed.tar.gz", "bobcat": "bobcat.tar"}
 
@@ -26,7 +25,12 @@ def fetch(name: str) -> Path:
     target.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=target.parent) as tmp:
         archive = Path(tmp) / ARCHIVES[name]
-        with urlopen(url) as response, open(archive, "wb") as out, \
+        try:
+            response = urlopen(url)
+        except HTTPError as err:
+            raise RuntimeError(f"could not download {name} from {url} (HTTP {err.code}); set COMP0267_ASSETS to a "
+                               "mirror that holds it") from None
+        with response, open(archive, "wb") as out, \
                 tqdm(total=int(response.headers.get("Content-Length") or 0) or None, unit="B", unit_scale=True,
                      desc=f"downloading {name}") as bar:
             while chunk := response.read(1 << 20):

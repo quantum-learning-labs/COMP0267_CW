@@ -12,14 +12,10 @@ requires-python = ">=3.11"
 dynamic = ["dependencies"]
 
 [project.optional-dependencies]
-images = ["clip @ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6"]
 test = ["pytest"]
 
 [tool.setuptools]
 packages = ["comp0267"]
-
-[tool.setuptools.package-data]
-comp0267 = ["*.csv.gz"]
 
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }
