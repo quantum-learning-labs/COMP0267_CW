@@ -13,8 +13,8 @@ import opt_einsum as oe
 import torch
 from torch import nn
 
-from modules.diagrams import Diagram, add_root, symbol
-from modules.einsum import EinsumModel, Op, Recipe, batched_expression
+from comp0267.diagrams import Diagram, add_root, symbol
+from comp0267.einsum import EinsumModel, Op, Recipe, batched_expression
 
 DTYPE = torch.complex64
 

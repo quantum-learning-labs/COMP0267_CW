@@ -20,10 +20,11 @@ from PIL import Image
 from torch.utils.data import Dataset
 from tqdm.auto import tqdm
 
-from modules.diagrams import parse
+from comp0267.assets import fetch
+from comp0267.diagrams import parse
 
 CSV_URL = "https://raw.githubusercontent.com/google-deepmind/svo_probes/main/svo_probes.csv"
-MANIFEST = Path(__file__).resolve().parent / "manifests" / "svo-probes" / "curated.csv.gz"
+MANIFEST = Path(__file__).resolve().parent / "svo_probes_manifest.csv.gz"
 
 # verbs whose subject and object can be swapped without changing the meaning: no negatives for the swap set
 SYMMETRIC_VERBS = {"meet", "hug", "kiss", "marry", "touch", "fight", "play", "talk", "dance", "race", "wrestle",
@@ -90,7 +91,11 @@ def embed_images(zip_path: Path, device: str = "cpu") -> dict[int, torch.Tensor]
 
 
 def prepare_svo_probes(root: Path, device: str = "cpu") -> None:
-    """Build ``processed/all.pkl`` (rows + parsed diagrams) and ``processed/image_embeddings.pt`` from scratch."""
+    """Rebuild ``processed/all.pkl`` (rows + parsed diagrams) and ``processed/image_embeddings.pt`` from the sources.
+
+    Not needed for the coursework (``load_svo_probes`` downloads the processed files): it fetches about 10,000 images
+    and needs the optional ``clip`` dependency.
+    """
     raw, processed = root / "svo-probes" / "raw", root / "svo-probes" / "processed"
     processed.mkdir(parents=True, exist_ok=True)
     df = download_svo_probes(raw)
@@ -100,11 +105,12 @@ def prepare_svo_probes(root: Path, device: str = "cpu") -> None:
     df.to_pickle(processed / "all.pkl")
 
 
-def load_svo_probes(root: Path) -> tuple[pd.DataFrame, dict[int, torch.Tensor]]:
-    """Rows with a diagram and both image embeddings, and the embeddings; prepares the data first if missing."""
-    processed = root / "svo-probes" / "processed"
-    if not (processed / "all.pkl").exists() or not (processed / "image_embeddings.pt").exists():
-        prepare_svo_probes(root)
+def load_svo_probes(processed: Path | None = None) -> tuple[pd.DataFrame, dict[int, torch.Tensor]]:
+    """Rows with a diagram and both image embeddings, and the embeddings.
+
+    ``processed`` holds ``all.pkl`` and ``image_embeddings.pt``; by default the course copy is downloaded and cached.
+    """
+    processed = Path(processed) if processed is not None else fetch("svo-probes")
     df = pd.read_pickle(processed / "all.pkl")
     embeddings = torch.load(processed / "image_embeddings.pt")
     keep = (df["corrected_sentence_diagram"].notna() & df["pos_image_id"].isin(embeddings)

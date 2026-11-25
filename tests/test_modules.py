@@ -7,11 +7,11 @@ import torch
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Operator, Statevector
 
-from modules.circuits import estimate_overlap, exact_overlap, overlap_circuit, to_circuit
-from modules.classical import TNCompiler, TNModel
-from modules.diagrams import add_root
-from modules.quantum import GATES, AngleEncoder, Ansatz, VQCModel
-from modules.training import fidelity
+from comp0267.circuits import estimate_overlap, exact_overlap, overlap_circuit, to_circuit
+from comp0267.classical import TNCompiler, TNModel
+from comp0267.diagrams import add_root
+from comp0267.quantum import GATES, AngleEncoder, Ansatz, VQCModel
+from comp0267.training import fidelity
 
 # "alice loves bob": the verb has wires (n, s, n); wire 0 is the sentence output
 DIAGRAM = [("alice", [1], ["n"]), ("loves", [1, 0, 2], ["n", "s", "n"]), ("bob", [2], ["n"])]

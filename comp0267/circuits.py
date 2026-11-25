@@ -12,7 +12,7 @@ from itertools import count
 from qiskit import QuantumCircuit, transpile
 from qiskit.quantum_info import Statevector
 
-from modules.einsum import Recipe
+from comp0267.einsum import Recipe
 
 Counts = dict[str, int]
 

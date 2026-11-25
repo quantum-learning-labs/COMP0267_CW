@@ -12,6 +12,8 @@ from itertools import count
 from lambeq import BobcatParser
 from lambeq.text2diagram import CCGRule, CCGTree, CCGType
 
+from comp0267.assets import fetch
+
 Box = tuple[str, list[int], list[str]]
 Diagram = list[Box]
 
@@ -123,10 +125,18 @@ def symbol(word: str, types: Sequence[str]) -> str:
     return f"{word}_{'@'.join(types)}"
 
 
+def load_parser(device: str | None = None) -> BobcatParser:
+    """The Bobcat CCG parser, with its model downloaded and cached on first use (lambeq's own server is gone)."""
+    import torch
+
+    device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+    return BobcatParser(model_name_or_path=str(fetch("bobcat")), device=device, verbose="suppress")
+
+
 def parse(sentences: Sequence[str], parser: BobcatParser | None = None,
           on_error: Callable[[str, Exception], None] | None = None) -> list[Diagram | None]:
     """Parse sentences into (unrooted) diagrams; ``None`` where parsing or reading the diagram fails."""
-    parser = parser or BobcatParser(verbose="suppress")
+    parser = parser or load_parser()
     trees = parser.sentences2trees([normalise(s) for s in sentences], suppress_exceptions=True)
     diagrams = []
     for sentence, tree in zip(sentences, trees):
