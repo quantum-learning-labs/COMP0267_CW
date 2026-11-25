@@ -13,5 +13,6 @@ lambeq==0.5.0
 transformers>=4.40,<5
 # IQM hardware needs iqm-client[qiskit], which pins qiskit<2.2: use a separate environment for it
 qiskit==2.4.2
-qiskit-aer==0.17.2
+# on GPU runtimes the notebook's setup cell swaps this for qiskit-aer-gpu of the same version
+qiskit-aer==0.18.4
 qiskit-ibm-runtime==0.47.0
