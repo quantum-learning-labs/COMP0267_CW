@@ -1,9 +1,7 @@
 """Consistency checks: torch contractions agree with Qiskit statevectors. Run with ``python -m pytest tests``."""
 import math
 
-import numpy as np
-import pytest
-import torch
+import numpy as np, pytest, torch
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Operator, Statevector
 

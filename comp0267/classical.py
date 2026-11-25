@@ -3,8 +3,7 @@ import math
 from collections.abc import Callable, Iterable, Mapping
 from itertools import count
 
-import opt_einsum as oe
-import torch
+import opt_einsum as oe, torch
 from torch import nn
 
 from comp0267.diagrams import Diagram, add_root, symbol

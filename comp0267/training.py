@@ -1,8 +1,7 @@
 """Similarities, the InfoNCE loss and the two-way choice evaluation."""
 from collections.abc import Callable
 
-import torch
-import torch.nn.functional as F
+import torch, torch.nn.functional as F
 from torch import nn
 from torch.utils.data import DataLoader
 
