@@ -1,10 +1,20 @@
-import torch
+import torch, os, yaml
 from tqdm import tqdm
 from qiskit import transpile
 from qiskit_aer import AerSimulator
 from qiskit_aer.noise import NoiseModel
 import qiskit_ibm_runtime.fake_provider as fake_provider
 from qiskit.transpiler import CouplingMap
+from itertools import batched
+
+from iqm.qiskit_iqm import IQMProvider
+from iqm.qubit_selector.qubit_selector import CostEvaluator
+from iqm.qubit_selector.qiskit_utils import perform_backend_transpilation
+
+from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2 as Sampler
+
+from modules.utils.general import gen_id
+
 
 DEFAULT_PROFILE = {'ibm': 'miami', 'iqm': 'garnet'}
 
@@ -99,3 +109,127 @@ class BackendManager:
             )
             transpiled_circs.extend(transpiled_chunk)
         return transpiled_circs
+
+class IQMBackendManager(BackendManager):
+    def __init__(self,profile, method='statevector', hardware_profile=None, qlimit=None):
+        super().__init__(provider="IQM", profile=profile, method=method, hardware_profile=hardware_profile, qlimit=qlimit)
+
+    def _setup_backend(self):
+        iqm_server = "https://resonance.iqm.tech/" 
+
+        provider = IQMProvider(iqm_server, quantum_computer = self.hardware_profile)
+        self._backend = provider.get_backend()
+
+        self.coupling_map = self._backend.coupling_map
+        self.basis_gates = self._backend.operation_names
+
+    def transpile(self, circuits, optimization_level=1):
+        transpiled_circs = []
+
+        for circuit in circuits:
+            layouts, _ = CostEvaluator(backend=self._backend, quantum_circuit=circuit).get_top_layouts(num_layouts=1)
+
+            transp_circuit = perform_backend_transpilation([circuit],
+                                                            self._backend,
+                                                            layouts[0],
+                                                            self.coupling_map.reduce(mapping=layouts[0]),
+                                                            qiskit_optim_level = optimization_level
+                                                            )
+            transpiled_circs.append(transp_circuit)
+        return transpiled_circs
+    
+class IBMBackendManager(BackendManager):
+    def __init__(self,profile, method='statevector', hardware_profile=None, qlimit=None):
+            super().__init__(provider="IBM", profile=profile, method=method, hardware_profile=hardware_profile, qlimit=qlimit)
+    
+    
+    def _setup_backend(self):
+        QiskitRuntimeService.save_account(token=os.getenv('IBM_TOKEN'), instance=os.getenv('IBM_INSTANCE'), overwrite=True, set_as_default=True)
+        service = QiskitRuntimeService()
+        self._backend = service.backend(self.hardware_profile)
+        self.coupling_map = self._backend.coupling_map
+        self.basis_gates = self._backend.basis_gates
+        if "xslow" in self.basis_gates:
+            self.basis_gates.remove('xslow')
+
+
+class ProviderManager:
+    def __init__(self, backend_manager):
+        self.backend_manager = backend_manager
+
+    def submit_job(self, qc_array, shots):
+        sampler = Sampler(self.backend)
+        result = sampler.run(qc_array, shots=shots)
+        job_id = result.job_id()
+
+        self._save_job(qc_array, shots, job_id)
+
+    def _save_job(self, shots, job_id):
+
+        job_info = {
+            "backend": self.backend_manager.provider,
+            "job_id": job_id,
+            "shots": shots,
+        }
+
+        save_filename = f"{self.backend_name}__{gen_id(self.config)}"
+        print(f"Saved job information to {save_filename}")
+        with open(f"jobs/{save_filename}.yaml", "w") as file:
+            yaml.dump(job_info, file)
+
+        return f"jobs/{save_filename}.yaml"
+
+    def _get_results(self, job_id):
+        job = self.backend_manager.backend().retrieve_job(job_id)
+        return job.result().get_counts()
+
+    def _get_counts(self, results, idx):
+        return results[idx]
+        
+    def retrieve_job(self, job_info):
+        
+        results = self._get_results(job_info["job_id"])
+
+        counts_array = []
+        for idx in tqdm(range(len(results)), desc="Retrieving jobs", unit="job"):
+            counts_array.append(self._get_counts(results, idx))
+
+        return counts_array
+
+class IQMProviderManager(ProviderManager):
+    backend_name = "IQM"
+    def __init__(self, config, backend_manager):
+        super().__init__(config, backend_manager)
+
+    def _get_results(self, job_ids):
+        results = []
+        for slice_id in job_ids:
+            job = self.backend_manager.backend().retrieve_job(slice_id)
+            results = results + job.result().get_counts()
+        return results
+
+    def submit_job(self, qc_array, shots):
+
+        qc_arrays = batched(qc_array, 100) # IQM only allows 100 circuits per job
+        job_ids = []
+        for qc_slice in qc_arrays:
+            result = self.backend.run(qc_slice, shots=shots)
+            job_ids.append(result.job_id())
+
+        self._save_job(qc_array, shots, job_ids)
+
+class IBMProviderManager(ProviderManager):
+    backend_name = "IBM"
+    def __init__(self, config, backend_manager):
+        super().__init__(config, backend_manager)
+
+
+    def _get_results(self, job_id):
+        job = self.backend_manager.service.job(job_id)
+        return job.result()
+
+    def _get_counts(self, results, idx):
+        result = results[idx].join_data()
+        return result.get_counts()
+
+
