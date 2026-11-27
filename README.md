@@ -74,7 +74,7 @@ no longer exists, so `comp0267.symbolic.diagrams.load_parser()` is the way to ge
 Students build on the package by subclassing its base classes in the notebook (e.g. `comp0267.compilation.ansatz.Ansatz`,
 `comp0267.compilation.einsum.EinsumModel`), not by editing it.
 
-## Course assets (instructors)
+## Course assets
 `comp0267.data.assets` downloads two archives from the GitHub release `assets-v1` of this repository:
 `svo-probes-processed.tar.gz` (rows, parsed diagrams and CLIP image embeddings) and `bobcat.tar` (the Bobcat model in
 fp16 safetensors). To publish them, create a release with tag `assets-v1` (*Releases → Draft a new release*) and attach
