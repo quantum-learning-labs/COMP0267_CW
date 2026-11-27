@@ -1,21 +1,22 @@
-# direct dependencies (versions of the environment the results were produced with)
-torch==2.9.0
-torchvision==0.24.0
-numpy==2.4.6
-pandas==2.3.3
-pillow==12.1.0
-pyyaml==6.0.3
-tqdm==4.67.3
-einops==0.8.2
+# Dependencies of the comp0267 package (pyproject.toml reads this file). Tested on Python 3.12 and 3.13.
+# Colab already provides numpy, pandas, matplotlib, pillow, tqdm and torch: these only have lower bounds, so its
+# preinstalled versions are kept. The rest are pinned to tested versions.
+numpy>=1.26
+pandas>=2.0
+matplotlib>=3.8
+pillow>=10.0
+tqdm>=4.66
+torch>=2.2
 opt-einsum==3.4.0
-scikit-learn==1.8.0
-pydantic-settings==2.10.1
-mlflow==3.8.1
-datasets==3.6.0
 lambeq==0.5.0
-qiskit==2.4.2
-qiskit-aer==0.17.2          # qiskit-aer-gpu on CUDA machines
-qiskit-ibm-runtime==0.47.0
-qiskit-ionq==1.1.1            # IonQ cloud simulator (emulate.provider: ionq)
-iqm-client[qiskit]==35.0.1   # IQM device snapshots (emulate.provider: iqm)
-clip @ git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6
+# lambeq 0.5's Bobcat parser breaks on transformers 5
+transformers>=4.40,<5
+# IQM's Qiskit adapter (iqm-client[qiskit]) needs qiskit<2.2 and qiskit-aer<0.18; qiskit-ibm-runtime 0.45 is the
+# newest IBM release that accepts that Qiskit
+qiskit==2.1.2
+# on GPU runtimes comp0267.utils.setup() swaps this for qiskit-aer-gpu-cu11 of the same version
+qiskit-aer==0.17.2
+qiskit-ibm-runtime==0.45.1
+iqm-client[qiskit]==37.0.0
+# older releases of this qiskit-ibm-runtime dependency ship only sources that no longer build
+ibm-platform-services>=0.70

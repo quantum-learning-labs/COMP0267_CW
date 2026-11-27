@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "comp0267"
+version = "1.0.0"
+description = "COMP0267 coursework: compositional text-image models as tensor networks and quantum circuits"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+dynamic = ["dependencies"]
+
+[tool.setuptools.packages.find]
+include = ["comp0267*"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
